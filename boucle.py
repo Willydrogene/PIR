@@ -55,25 +55,22 @@ wdir = '/home/willy/code/PIR/inerP_A1em2_alpha0p7/'
 liste_fichiers = os.listdir(wdir)
 #print(liste_fichiers)
 
-ext_fichier = ['test', 'hiPhiRed', 'test_BIS', 'hiPhiRed_BIS']
+ext_fichier = ['test', 'hiPhiRes', 'test_BIS', 'hiPhiRes_BIS']
 
 for elem in liste_fichiers[0:3]:
     tagi = do[nam][0]
-    try:
-        fdom = open(wdir+elem+'/iner'+pot+'.'+ext_fichier[0],'r')
-    except:
-        try:
-            fdom = open(wdir+elem+'/iner'+pot+'.'+ext_fichier[1],'r')
-        except:
-            try:
-                fdom = open(wdir+elem+'/iner'+pot+'.'+ext_fichier[2],'r')
-            except:
-                try:
-                    fdom = open(wdir+elem+'/iner'+pot+'.'+ext_fichier[3],'r')
-                except:
-                    print("J'peux plus rien faire pour toi")
 
-    la = np.loadtxt(fdom)
+    for ext in ext_fichier:
+        path = f"{wdir}{elem}/iner{pot}.{ext}"
+        try:
+            la = np.loadtxt(path)
+            break
+        except OSError:
+            continue
+    else:
+        print("J'peux plus rien faire pour toi", wdir + elem)
+
+    
 
     # sampling rate
     itend = len(la[:,0]) 
@@ -89,6 +86,7 @@ for elem in liste_fichiers[0:3]:
     # compute Fourier transform and frequencies
     freqs   = np.fft.fftfreq(sr, d=dt)*2*np.pi
     lim     = 1e4
+    plt.figure(figsize=(13,9))
     for i,lm in enumerate(tab):
         fft = np.fft.fft(la[:itend,lm]*w1)
         # select frequencies with highest power
@@ -96,37 +94,31 @@ for elem in liste_fichiers[0:3]:
             plt.plot(freqs, abs(fft),label=tab[lm],color=colours[i])
 
     # optional: find frequencies associated with highest FFT values
-    lmi = 3  # mode you want to look at
-    fft = np.fft.fft(la[:itend,lmi]*w1)
-    coeftab, freqtab = [], []
-    for coef, freq in zip(fft, freqs):
-        if freq>0.05 and freq<0.1:
+    liste_pics = []
+    for lmi in range(1, 21+1): # mode you want to look at
+        fft = np.fft.fft(la[:itend,lmi]*w1)
+        coeftab, freqtab = [], []
+        for coef, freq in zip(fft, freqs):
+            #if freq>0.05 and freq<0.1:
             coeftab.append(coef)
             freqtab.append(freq)
-    idx = np.where(coeftab == max(coeftab))[0][0]
-    print(int(coeftab[idx]),freqtab[idx],tab[lmi])
-
-    # # to adapt: identify frequency excited; clever ways can be used with arrows or embeddded numbers
-    # omegas = [inif,inif/2]  # etc ...
-    # ax     = plt.gca()
-    # ylims  = ax.get_ylim()
-    # for omi in omegas:
-    # p4,    = plt.vlines(omega,ylims[0],ylims[1],'--',label=r'$\omega=0.2$')
-    # # gather the legends
-    # ps = [p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11]
-    # ls = []
-    # for li in ps:
-    #     ls.append(li.get_label())
-    # plt.legend(ps,ls,loc='upper right',ncol=2)
-    # plt.gca().add_artist(l0)
-
-    # Plot Fourier analysis 
-    plt.xlim([0,3])
-    # plt.ylim([1.,4e6])
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(5,5))
-    plt.xlabel(r'$\omega$')
-    plt.ylabel(r'$\mathrm{power\ of\ '+pots[pot]+'}$')
-    plt.legend(title=r'$(l,m)$')
-    plt.show()
-    # plt.savefig('fft_om'+inif+'_CT'+CT+tag+'_iner'+pot+'.pdf')
-
+        coeftab = np.array(coeftab)
+        idx = np.argmax(np.abs(coeftab))
+        print("pic=", np.abs(coeftab[idx]), "w=", freqtab[idx], tab[lmi]) # coeftab[idx] pour avoir a+ib
+        liste_pics.append(np.abs(coeftab[idx]))
+    print("#############################################################################")
+    print("pic maximum=", max(liste_pics))
+    for pic in liste_pics:
+        if (pic != max(liste_pics)) and (pic >= 0.2*max(liste_pics)):
+            print("        pic=", pic, " au moins 20% pic max")
+            # Plot Fourier analysis 
+            plt.xlim([0,3])
+            # plt.ylim([1.,4e6])
+            plt.ticklabel_format(axis='y', style='sci', scilimits=(5,5))
+            plt.xlabel(r'$\omega$')
+            plt.ylabel(r'$\mathrm{power\ of\ '+pots[pot]+'}$')
+            plt.legend(title=r'$(l,m)$')
+            plt.show()
+            # plt.savefig('fft_om'+inif+'_CT'+CT+tag+'_iner'+pot+'.pdf')
+            break
+    print("#############################################################################\n")
