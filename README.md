@@ -1,7 +1,7 @@
 # PIR
 Projet d'Initiation à la Recherche
 
-Branche MANU
+Branche manu
 
 Les commandes de bases:
 
@@ -21,7 +21,7 @@ git add fichier.py fichier2.py // Pour préparer ton colis (autant que tu veux)
 git commit -m "J'écris une description" // Pour mettre une phrase obligatoire sur ton colis final
 git push // (git push -u origin manu) la première fois pour qu'il capte le lien de la branche du local au git, pour envoyer le colis
 
-git rm <fichier> // Pour supp un fichier du git, faut le add commit push après 
+git rm fichier.py // Pour supp un fichier du git, faut le add commit push après 
 git log // Affiche l’historique des commits
 git log --oneline // Version courte de l’historique
 
