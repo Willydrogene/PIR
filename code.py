@@ -58,7 +58,7 @@ forcing_amplitude = '1em2'
 simulation_tag = '_alpha0p7'
 
 # Dossier de travail
-base_folder = '/home/willy/code/PIR/inerP_A1em2_alpha0p7/'
+base_folder = './inerP_A1em2_alpha0p7/'
 subfolder_name = f'om{initial_freq}_A{forcing_amplitude}{simulation_tag}/'
 
 # Extensions possibles des fichiers

@@ -50,7 +50,7 @@ colours  = cm.nipy_spectral(np.linspace(0, 1, n_colors))
 # directories and extension (to adapt)
 nam  = 'om'+inif+'_A'+CT+tag+'/'
 do   = {nam:['test']}              # other extensions exist
-wdir = '/home/willy/code/PIR/inerP_A1em2_alpha0p7/' 
+wdir = './inerP_A1em2_alpha0p7/' 
 
 liste_fichiers = os.listdir(wdir)
 #print(liste_fichiers)
@@ -85,7 +85,7 @@ for elem in liste_fichiers[0:3]:
 
     # compute Fourier transform and frequencies
     freqs   = np.fft.fftfreq(sr, d=dt)*2*np.pi
-    lim     = 1e4
+    lim     = 1e4  #threshold
     plt.figure(figsize=(13,9))
     for i,lm in enumerate(tab):
         fft = np.fft.fft(la[:itend,lm]*w1)
