@@ -39,8 +39,9 @@ tot  = {key: value for d in (even, odd) for key, value in d.items()}
 tab  = tot     # usually even for P, odd for T
 pot  = 'P'     # poloidal or toroidal potential
 pots = {'P':'W','T':'Z'}  
-inif = '0p1'              # initial frequency (1 per simulation)
-CT    = '1em2'            # tidal amplitude forcing
+inif_str = '0p2'              # initial frequency (1 per simulation)
+inif_num = 0.2
+CT    = '5em2'            # tidal amplitude forcing
 tag  = '_alpha0p7'        # shell aspect ratio
 
 # select colors for != modes
@@ -48,9 +49,9 @@ n_colors = len(tab)
 colours  = cm.nipy_spectral(np.linspace(0, 1, n_colors))
 
 # directories and extension (to adapt)
-nam  = 'om'+inif+'_A'+CT+tag+'/'
-do   = {nam:['test']}              # other extensions exist
-wdir = '/home/willy/code/PIR/inerP_A1em2_alpha0p7/' 
+nam  = 'omm'+inif_str+'_A'+CT+tag+'/'    # ou 'omm'
+do   = {nam:['hiPhiRes']}              # other extensions exist (test, hiPhiRes)
+wdir = '/home/manuelf/PIRS8/PIR/manu_red/' # /home/manuelf/PIRS8/PIR/inerP_A1em2_alpha0p7/
 tagi = do[nam][0]
 fdom = open(wdir+nam+'iner'+pot+'.'+tagi,'r')
 la   = np.loadtxt(fdom)
@@ -61,6 +62,22 @@ t     = la[:itend,0]     # you might want to change itend (and istart) to analys
 sr = len(t)
 dt = max(t)/sr
 
+plt.figure(figsize=(13, 9))
+
+# Modes qu'on veut observer
+for lmi in tab:
+    # Index de la couleur correspondante
+    couleur_idx = list(tab.keys()).index(lmi)
+    
+    # Amplitude du mode en fonction du temps
+    plt.plot(t, la[:itend, lmi], label=tab[lmi], color=colours[couleur_idx])
+
+plt.xlabel('Temps')
+plt.ylabel('Amplitude de ' + pots[pot])
+plt.legend(title='(l,m)')
+plt.title("Évolution temporelle des modes")
+plt.show()
+
 # Window functions
 w1 = np.zeros(sr)
 for n in range(sr):
@@ -68,37 +85,41 @@ for n in range(sr):
 
 # compute Fourier transform and frequencies
 freqs   = np.fft.fftfreq(sr, d=dt)*2*np.pi
-lim     = 1e4
+lim     = 2e5
 for i,lm in enumerate(tab):
     fft = np.fft.fft(la[:itend,lm]*w1)
     # select frequencies with highest power
     if np.any(abs(fft)>lim):
         plt.plot(freqs, abs(fft),label=tab[lm],color=colours[i])
 
-# optional: find frequencies associated with highest FFT values
-lmi = 3  # mode you want to look at
-fft = np.fft.fft(la[:itend,lmi]*w1)
-coeftab, freqtab = [], []
-for coef, freq in zip(fft, freqs):
-    if freq>0.05 and freq<0.1:
-        coeftab.append(coef)
-        freqtab.append(freq)
-idx = np.where(coeftab == max(coeftab))[0][0]
-print(int(coeftab[idx]),freqtab[idx],tab[lmi])
+# # optional: find frequencies associated with highest FFT values
+# lmi = 1  # mode you want to look at
+# fft = np.fft.fft(la[:itend,lmi]*w1)
+# coeftab, freqtab = [], []
+# for coef, freq in zip(fft, freqs):
+#     if freq>0.05 and freq<0.1:
+#         coeftab.append(coef)
+#         freqtab.append(freq)
+# idx = np.where(coeftab == max(coeftab))[0][0]
+# print(int(coeftab[idx]),freqtab[idx],tab[lmi])
 
 # # to adapt: identify frequency excited; clever ways can be used with arrows or embeddded numbers
-# omegas = [inif,inif/2]  # etc ...
+# omegas = [inif_num,inif_num/2]  # etc ...
 # ax     = plt.gca()
 # ylims  = ax.get_ylim()
-# for omi in omegas:
-# p4,    = plt.vlines(omega,ylims[0],ylims[1],'--',label=r'$\omega=0.2$')
-# # gather the legends
-# ps = [p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11]
+
+# ps = []
 # ls = []
+
+# for omi in omegas:
+#     p = plt.vlines(omi,ylims[0],ylims[1],linestyle='--',label=rf'$\omega={omi}$')
+#     ps.append(p)
+
+# # gather the legends
 # for li in ps:
 #     ls.append(li.get_label())
 # plt.legend(ps,ls,loc='upper right',ncol=2)
-# plt.gca().add_artist(l0)
+#plt.gca().add_artist(l0)
 
 # Plot Fourier analysis 
 plt.xlim([0,3])
