@@ -8,6 +8,7 @@ import library
 from operator import itemgetter
 import pandas as pd
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed # Import pour le multithreading
 
 # --- 1. CONFIGURATION DU STYLE ---
 pgf_with_latex = {
@@ -33,7 +34,6 @@ pot = 'P'             # 'P' ou 'T'
 symbole = 'W' if pot == 'P' else 'Z'
 tab = even if pot == 'P' else odd
 
-
 colours = cm.nipy_spectral(np.linspace(0, 1, len(tab)))
 
 # --- PARAMÈTRES FIXES ---
@@ -41,7 +41,6 @@ repertoire_base = './inerP_A1em2_alpha0p7/'
 type_potentiel = 'P' 
 tag_fichier = 'test'
 nom_fichier_donnees = f"iner{type_potentiel}.{tag_fichier}"
-
 
 
 def recherche_pics(data,freqs,hanning):
@@ -62,7 +61,6 @@ def recherche_pics(data,freqs,hanning):
         
 
 def recherche_simulation_interressante(chemin_fichier):
-    
     data = pd.read_csv(chemin_fichier, sep='\s+', header = None)
     temps =  data.iloc[:,0]
     len_temps = len(temps)
@@ -70,29 +68,48 @@ def recherche_simulation_interressante(chemin_fichier):
     hanning = np.hanning(len_temps)
     freqs = np.fft.rfftfreq(len_temps,d=dt) * 2 * np.pi
     liste_puissance_Cnm = recherche_pics(data,freqs,hanning)
+    
+    if not liste_puissance_Cnm: # Sécurité au cas où la liste est vide
+        return None
+        
     mode_dominant = max(liste_puissance_Cnm, key=itemgetter(1))    #pour trouver le mode dominant
     
     for i,element in enumerate(liste_puissance_Cnm):
-        
         if element[2] != mode_dominant[2]:
             if element[1] >= 0.2*mode_dominant[1] and element[0] != mode_dominant[0]:
                 print(chemin_fichier)
-                print("chemin = ",chemin_fichier,freq_max = ",element[0],"puissance_max = ",element[1],"label = ",element[2],"\n")
+                # Correction du guillemet manquant ici avant freq_max :
+                print("chemin = ", chemin_fichier, "freq_max = ", element[0], "puissance_max = ", element[1], "label = ", element[2], "\n")
                 return (chemin_fichier,liste_puissance_Cnm)
-        
-
-liste_chemins_dossier = library.registre_chemin_dossier("./inerP_A1em2_alpha0p7")
-liste_simulations_interressante = []
+    return None
 
 
-for racine in tqdm(liste_chemins_dossier, desc="Analyse des simulations", unit="fichier"):
-    chemin_fichier = racine/nom_fichier_donnees
+# --- MULTITHREADING ---
+
+def traiter_dossier(racine):
+    """Fonction wrapper pour exécuter la recherche sur un seul thread."""
+    chemin_fichier = racine / nom_fichier_donnees
     if chemin_fichier.exists():
-        tuple_sortie = recherche_simulation_interressante(chemin_fichier)
-        liste_simulations_interressante.append(tuple_sortie)
+        return recherche_simulation_interressante(chemin_fichier)
+    return None
 
+if __name__ == '__main__':
+    liste_chemins_dossier = library.registre_chemin_dossier("./inerP_A1em2_alpha0p7")
+    liste_simulations_interressante = []
+
+    # Détermine le nombre de threads optimal (généralement le nombre de coeurs de ton processeur)
+    nb_threads = min(32, os.cpu_count() + 4)
+
+    # Initialisation du ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=nb_threads) as executor:
+        # On soumet toutes les tâches à l'exécuteur
+        futures = {executor.submit(traiter_dossier, racine): racine for racine in liste_chemins_dossier}
         
-print(f"\nTerminé ! {len(liste_simulations_interressante)} simulations intéressantes trouvées.")
+        # On utilise tqdm combiné avec as_completed pour mettre à jour la barre de progression au fur et à mesure
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Analyse des simulations", unit="fichier"):
+            resultat = future.result()
+            # Si la fonction a retourné un tuple (et non None), on l'ajoute à la liste finale
+            if resultat is not None:
+                liste_simulations_interressante.append(resultat)
 
-
-
+    print(f"\nTerminé ! {len(liste_simulations_interressante)} simulations intéressantes trouvées.")
