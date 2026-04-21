@@ -58,7 +58,7 @@ def analyser_un_fichier(chemin_fichier):
         
         liste_puissance_Cnm = []
         for i, col_idx in enumerate(cols_presentes):
-            puissance_col = puissances[:, i]
+            puissance_col = puissances[:,i]
             idx_max = np.argmax(puissance_col)
             p_max = puissance_col[idx_max]
             f_max = freqs[idx_max]
@@ -75,15 +75,22 @@ def analyser_un_fichier(chemin_fichier):
         mode_dominant = max(liste_puissance_Cnm, key=itemgetter(1))
         
         c1, c2 = 0, 0
-        for element in liste_puissance_Cnm:
-            if element[2] != mode_dominant[2]:
+        for element in liste_puissance_Cnm:       
+            if element[1] >= 0.2 * mode_dominant[1]:    
                 c2 += 1
-                if element[1] >= 0.2 * mode_dominant[1]:
+                #print("c2 = ",c2,"\n")
+                if element[2] != mode_dominant[2]:
                     if abs(element[0] - mode_dominant[0]) < df:
+                        #print("df = ",df,"\n")
+                        #print("diff = ",abs(element[0] - mode_dominant[0]),"\n")
                         c1 += 1
+                        #print("c1 = ",c1,"\n")
         if c1 == c2:
+            #print("égale c1 = ",c1,"c2 = ",c2,"\n")
             return None
-        return chemin_fichier
+        if c1 != c2:
+            #print("pas égale c1 = ",c1,"c2 = ",c2,"\n")
+            return chemin_fichier
 
     except Exception as e:
         return f"Erreur sur {chemin_fichier}: {e}"
@@ -103,9 +110,7 @@ if __name__ == '__main__':
     print(f"Lancement de l'analyse sur {len(tous_les_fichiers)} fichiers...")
     
     with ProcessPoolExecutor(max_workers=4) as executor:
-        list_map = list(tqdm(executor.map(analyser_un_fichier, tous_les_fichiers), 
-                             total=len(tous_les_fichiers), 
-                             desc="Analyse"))
+        list_map = list(tqdm(executor.map(analyser_un_fichier, tous_les_fichiers), total=len(tous_les_fichiers),desc="Analyse"))
 
     # 1. Filtrage pour ne garder que les chemins valides
     liste_simulations_interressante = [res for res in list_map if res is not None]
