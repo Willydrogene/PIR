@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 from pathlib import Path
 from operator import itemgetter
 from concurrent.futures import ProcessPoolExecutor
@@ -24,105 +25,99 @@ pot = 'P'
 tab = even if pot == 'P' else odd
 type_potentiel = 'P'
 
-# --- 2. FONCTIONS DE CALCUL OPTIMISÉES ---
 
-def analyser_un_fichier(chemin_fichier):
-    """Fonction exécutée par chaque processeur"""
+
+def analyseSimu(chemin_fichier):
     try:
         if not chemin_fichier.exists():
             return None
-
-        # Lecture rapide avec NumPy ou Pandas (engine='c' est très performant)
-        df = pd.read_csv(chemin_fichier, sep='\s+', header=None)
-        data = df.values # Conversion en array NumPy pour la vitesse
-        
+    
+        """Fonction exécutée par chaque processeur"""
+    #-----------------------------on extrait les données----------------------------------------
+        df = pd.read_csv(chemin_fichier, sep=r'\s+', header=None)            #j'utilise panda qui prends d'une traite les colonnes
+        data = df.values                                                    # Conversion en array NumPy pour la vitesse
         temps = data[:, 0]
-        dt = temps[1] - temps[0]
+        """dt_list = np.diff(temps)
+        est_constant = np.allclose(dt_list, dt_list[0])"""
+        dt = temps[1] - temps[0]                                            #je modifierais après que les codes sois harmonisé
         n_samples = len(temps)
-        df =  2 * np.pi/(np.max(temps)-np.min(temps))
-        
+        freqs = np.fft.rfftfreq(n_samples, d=dt) * 2 * np.pi                #on calcul les fréquences
+
+        epsilon =  2 * np.pi/(np.max(temps)-np.min(temps))                       
         # Préparation de la fenêtre Hanning (vectorisée)
-        hanning = np.hanning(n_samples)[:, np.newaxis]
-        
+        hanning = np.hanning(n_samples)[:, np.newaxis]                      #vectorisation pour aller plus vite
         # Sélection des colonnes cibles présentes dans le fichier
         cols_presentes = [c for c in tab.keys() if c < data.shape[1]]
-        if not cols_presentes:
-            return None
-            
-        # --- OPTIMISATION NUMPY ---
         # On calcule la FFT sur toutes les colonnes d'un coup (axis=0)
-        subset_data = data[:, cols_presentes] * hanning
+        subset_data = data[:, cols_presentes] * hanning                     #on applique la fenêtre de hanning sur les spectres
         spectres = np.fft.rfft(subset_data, axis=0)
-        puissances = np.abs(spectres)
-        freqs = np.fft.rfftfreq(n_samples, d=dt) * 2 * np.pi
-        
-        liste_puissance_Cnm = []
+        puissances = np.abs(spectres)                                       #on calcul la puissance
+
+        #------------------------segment décisions--------------------------
+
+        liste_puissance_Cnm = []                                            #ici je crée une liste dans laquel je retiens les Cnm suffisement élevé
+
         for i, col_idx in enumerate(cols_presentes):
+            
             puissance_col = puissances[:,i]
             idx_max = np.argmax(puissance_col)
             p_max = puissance_col[idx_max]
             f_max = freqs[idx_max]
             
             if p_max > 1e4:
-                label = tab[col_idx]
-                # On ne garde que les infos nécessaires pour le filtrage
-                liste_puissance_Cnm.append((f_max, p_max, label))
 
-        if not liste_puissance_Cnm:
-            return None
+                label = tab[col_idx]                                        #le label c'est le char 'Cnm'
+                liste_puissance_Cnm.append((f_max, p_max, label))           #je garde seulement les informations intéressente
 
-        # Logique de sélection "intéressante"
-        mode_dominant = max(liste_puissance_Cnm, key=itemgetter(1))
         
-        c1, c2 = 0, 0
-        for element in liste_puissance_Cnm:       
-            if element[1] >= 0.2 * mode_dominant[1]:    
-                c2 += 1
-                #print("c2 = ",c2,"\n")
-                if element[2] != mode_dominant[2]:
-                    if abs(element[0] - mode_dominant[0]) < df:
-                        #print("df = ",df,"\n")
-                        #print("diff = ",abs(element[0] - mode_dominant[0]),"\n")
-                        c1 += 1
-                        #print("c1 = ",c1,"\n")
-        if c1 == c2:
-            #print("égale c1 = ",c1,"c2 = ",c2,"\n")
-            return None
-        if c1 != c2:
-            #print("pas égale c1 = ",c1,"c2 = ",c2,"\n")
-            return chemin_fichier
+            mode_dominant = max(liste_puissance_Cnm, key=itemgetter(1))         #on extrait le mode dominant qui va nous servir à la comparaison
+            
+            c1, c2 = 0, 0                                                       #c1 compte les modes qui sont superposé avec le pic de forçage
+                                                                                #c2 compte les pics qui ont été sélectionné (suffisament fort)
+            for element in liste_puissance_Cnm:                                 #je boucle pour analyse les caractéristique des spectre
+                if element[1] >= 0.2 * mode_dominant[1]:    
+                    c2 += 1
+                    #print("c2 = ",c2,"\n")
+                    if element[2] != mode_dominant[2]:
+                        if abs(element[0] - mode_dominant[0]) < epsilon:
+                            #print("df = ",df,"\n")
+                            #print("diff = ",abs(element[0] - mode_dominant[0]),"\n")
+                            c1 += 1
+                            #print("c1 = ",c1,"\n")
+            if c1 == c2:                                                       #si on a tout les pics qui sont superposé au pic de forçage, c'est un cas inintérressant
+                #print("égale c1 = ",c1,"c2 = ",c2,"\n")
+                return None
+            if c1 != c2:
+                #print("pas égale c1 = ",c1,"c2 = ",c2,"\n")
+                return chemin_fichier
+            
+    except Exception as e:                                                      #fermeture du bloc try except
+        return f"Erreur sur {chemin_fichier}:{e}"
 
-    except Exception as e:
-        return f"Erreur sur {chemin_fichier}: {e}"
 
-# --- 3. EXÉCUTION PARALLÈLE ---
 
-if __name__ == '__main__':
-    repertoire = Path("./inerP_A5em2_alpha0p7")
-    liste_chemins_dossier = library.registre_chemin_dossier(str(repertoire))
-    liste_tag_fichier = ['test', 'hiPhiRes', 'test_BIS', 'hiPhiRes_BIS']
+
+
+repertoire = "./inerP_A5em2_alpha0p7"
+liste_chemins_dossier = library.registre_chemin_dossier(str(repertoire))    #j'utilise un bibliothèque que j'ai crée pour créer une liste de chemins
+liste_tag_fichier = ['test', 'hiPhiRes', 'test_BIS', 'hiPhiRes_BIS']
+list_simu_inter = []
+
+for racine in tqdm(liste_chemins_dossier):
+    for tag in liste_tag_fichier:                                           #je parcours tout les tag existant, peut être qu'ici il y aune couille dans le paté?
+        resSimu = analyseSimu(Path(racine)/f"iner{type_potentiel}.{tag}")           
+        if resSimu != None:                                                 #conditions pour voir si la simu était bonne et on la stocke si c le cas
+            list_simu_inter.append(resSimu)
+
+print(f"Lancement de l'analyse sur {len(list_simu_inter)} fichiers...")
     
-    tous_les_fichiers = []
-    for racine in liste_chemins_dossier:
-        for tag in liste_tag_fichier:
-            tous_les_fichiers.append(Path(racine) / f"iner{type_potentiel}.{tag}")
 
-    print(f"Lancement de l'analyse sur {len(tous_les_fichiers)} fichiers...")
-    
-    with ProcessPoolExecutor(max_workers=4) as executor:
-        list_map = list(tqdm(executor.map(analyser_un_fichier, tous_les_fichiers), total=len(tous_les_fichiers),desc="Analyse"))
 
-    # 1. Filtrage pour ne garder que les chemins valides
-    liste_simulations_interressante = [res for res in list_map if res is not None]
+nom_csv = "test.csv"                                                           #tu met ici le nom du ficher CSV
 
-    # 2. SAUVEGARDE EN CSV
-    nom_csv = "resultats_simulationspool2.csv"
-    
-    # On crée un DataFrame avec une colonne 'chemin'
-    df_resultats = pd.DataFrame(liste_simulations_interressante, columns=['chemin_fichier'])
-    
-    # Sauvegarde (index=False permet de ne pas écrire la colonne d'index 0, 1, 2...)
-    df_resultats.to_csv(nom_csv, index=False, sep=';', encoding='utf-8')
 
-    print(f"\nTerminé ! {len(liste_simulations_interressante)} simulations trouvées.")
-    print(f"Fichier CSV créé : {nom_csv}")
+df_resultats = pd.DataFrame(list_simu_inter, columns=['chemin_fichier'])      #je crée un fichier avec une colonne contenant les chemins
+df_resultats.to_csv(nom_csv, index=False, sep=';', encoding='utf-8')          #on y sauvegarde les données
+
+print(f"\nTerminé ! {len(list_simu_inter)} simulations trouvées.")
+print(f"Fichier CSV créé : {nom_csv}")
