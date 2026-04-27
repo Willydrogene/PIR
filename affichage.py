@@ -36,24 +36,26 @@ pair   = {    # Modes pairs correspondent souvent au potentiel Poloïdal P
 impair = {    # Modes impairs correspondent souvent au potentiel Toroïdal T
     2 : r'$(2,1)$', 5 : r'$(3,2)$', 7 : r'$(4,1)$',
     9 : r'$(4,3)$', 12: r'$(5,2)$', 14: r'$(5,4)$',
-    16: r'$(6,1)$', 18: r'$(6,3)$', 20:r'$(6,5)$'
+    16: r'$(6,1)$', 18: r'$(6,3)$', 20: r'$(6,5)$'
 }
 
 # Fusion des dictionnaires de modes
-tot = {**pair, **impair}   # ** "vide" le dictionnaire dans l'accolade
-tab = tot   # Souvent modes pairs pour P et les impairs pour T
+tot = {**pair, **impair}            # ** "vide" le dictionnaire dans l'accolade
+tot = dict( sorted(tot.items()) )   # Trie dans l'ordre des modes
+tab = tot      # Souvent modes pairs pour P et les impairs pour T
 
 # Couleur de chaque mode (colormap)
 n_couleurs = len(tab)
-couleurs = cm.get_cmap('tab20', n_couleurs).colors
-# palette = cm.get_cmap('tab20').colors
+palette    = cm.get_cmap('tab20_r', 20).colors
+decalage = 0    # Si on veut mettre une couleur spéciale un un mode en particulier
+couleurs   = ['black', *palette[decalage:], *palette[:decalage]]
 
 
 # =============== Choix de la simulation + Lecture fichier =============== #
 
 # Paramètres de la simualtion à étudier
-omega_str = '0p98'
-Ct_str    = '5em2'
+omega_str = 'm1p62'
+Ct_str    = '1em2'
 
 # Conversion en float : 'p' -> 'virgule' et 'm' -> 'négatif'
 omega = float( omega_str.replace('m', '-').replace('p', '.') )
@@ -96,8 +98,6 @@ w1 = np.zeros(sr)
 for n in range(sr) :
     w1[n] = 1./2 - (1./2) * np.cos( (2*np.pi*n)/(sr-1) )
 
-# w1 = 1  # Pour teste sans Hanning
-
 # Stockage des spectres et calcul du max pour ensuite normaliser
 spectres_list = {}
 max_global = 0.0
@@ -126,9 +126,8 @@ for i, lm in enumerate(tab):
 
 plt.figure(figsize=(9, 6))
 
-lim = 0.05          # Affichage des modes > lim
+lim = 0.02          # Affichage des modes > lim
 modes_retenus = []  # Liste des modes supérieurs > lim pour spectre temporel
-# n_courbes = 0     # Autre manière de faire distribution des couleurs (ne pas utiliser)
 
 for i, (lm, amp) in enumerate(spectres_list.items()) :
     
@@ -138,25 +137,23 @@ for i, (lm, amp) in enumerate(spectres_list.items()) :
     # Plot du mode (l,m) si > lim
     if np.any(amp_normalisee > lim) :
 
-        # couleur_mode = palette[n_courbes % 20]  # %20 car parlette contient 10 couleurs contrastées
-
         plt.plot(freq_omega, amp_normalisee, label=tab[lm], color=couleurs[i])
-        # plt.plot(freq_omega, amp_normalisee, label=tab[lm], color=couleur_mode)
 
         # Sauvegarde du mode
         modes_retenus.append((i, lm))
 
-        # n_courbes += 1
-
-# Fréquence de forçage et sub-harmoniques
+# Fréquence de forçage harmoniques et sub-harmoniques
+plt.axvline(x=abs(omega*2), color='lightgray', alpha=0.7, linestyle='--', zorder=50)
+plt.axvline(x=abs(omega*3), color='lightgray', alpha=0.7, linestyle='--', zorder=50)
+plt.axvline(x=abs(omega*4), color='lightgray', alpha=0.7, linestyle='--', zorder=50)
 plt.axvline(x=abs(omega)  , color='lightgray', alpha=0.7, linestyle='--', zorder=50)
 plt.axvline(x=abs(omega/2), color='lightgray', alpha=0.7, linestyle='--', zorder=50)
 plt.axvline(x=abs(omega/3), color='lightgray', alpha=0.7, linestyle='--', zorder=50)
 plt.axvline(x=abs(omega/4), color='lightgray', alpha=0.7, linestyle='--', zorder=50)
 
 # Paramètres des axes
-plt.xlim([0, 2])
-plt.ylim([0, 1])     # Si on veut bien voir pics secondaires (A MOFIDIER)
+plt.xlim([0, 2])    # A MODIFIER Si on veut bien voir pics secondaires
+plt.ylim([0, 1])    # A MODIFIER
 plt.title(fr'$\omega = {omega}, C_t = {Ct}$')
 plt.xlabel(r'$\omega$')
 plt.ylabel(r'$\mathrm{power\ of\ W}$')
@@ -177,12 +174,15 @@ for i, lm in modes_retenus :
     
     plt.plot(t[1:], log_temporel, label=tab[lm], linewidth=1, color=couleurs[i])
 
-# Finitions du graphique temporel
-plt.title(f"Évolution temporelle")
+# Paramètres des axes
+# plt.xlim([0, 2750])     # A MODIFIER pour voir que intervalle qui nous intéresse
+# plt.ylim(bottom = -60)  # A MODIFIER
+plt.title(fr'$\omega = {omega}, C_t = {Ct}$')
 plt.xlabel(r'$t$')
 plt.ylabel(r'$\mathrm{log(W)}$')
 plt.legend(title=r'$(l,m)$', fontsize=12, ncol=2)
 
+# plt.savefig( f'ls_time_om{omega_str}_CT{Ct_str}_alpha0p7_inerP.pdf', bbox_inches='tight' )
 
 # ======================================================================= #
 plt.show()
