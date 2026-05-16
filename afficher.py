@@ -27,7 +27,7 @@ EVEN = {1:r'$(1,1)$', 3:r'$(2,2)$', 4:r'$(3,1)$', 6:r'$(3,3)$', 8:r'$(4,2)$', 10
 ODD  = {2:r'$(2,1)$', 5:r'$(3,2)$', 7:r'$(4,1)$', 9:r'$(4,3)$', 12:r'$(5,2)$', 14:r'$(5,4)$', 16:r'$(6,1)$', 18:r'$(6,3)$', 20:r'$(6,5)$'}
 TAB_MODES = {**EVEN, **ODD}
 POT_LABEL = {'P': 'W', 'T': 'Z'}
-OUTPUT_DIR = Path("./plots_allpool2")
+OUTPUT_DIR = Path("./test")
 
 # --- 2. FONCTION DE TRAITEMENT UNITAIRE ---
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
     # Récupération des chemins depuis ton CSV
-    df = pd.read_csv("resultats_simulationsPool2.csv", sep=';')
+    df = pd.read_csv("test.csv", sep=';')
     chemins = df['chemin_fichier'].tolist()
 
     print(f"🚀 Lancement du traitement de {len(chemins)} fichiers...")

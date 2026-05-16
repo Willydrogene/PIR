@@ -29,7 +29,7 @@ mpl.rcParams.update(pgf_with_latex)
 even = {1:r'$(1,1)$', 3:r'$(2,2)$', 4:r'$(3,1)$', 6:r'$(3,3)$', 8:r'$(4,2)$', 10:r'$(4,4)$', 11:r'$(5,1)$', 13:r'$(5,3)$', 15:r'$(5,5)$', 17:r'$(6,2)$', 19:r'$(6,4)$', 21:r'$(6,6)$'}
 odd  = {2:r'$(2,1)$', 5:r'$(3,2)$', 7:r'$(4,1)$', 9:r'$(4,3)$', 12:r'$(5,2)$', 14:r'$(5,4)$', 16:r'$(6,1)$', 18:r'$(6,3)$', 20:r'$(6,5)$'}
 
-pot = 'P'             # 'P' ou 'T'
+pot = 'P'             # 'P' ou 'T'req_max,puissa
 symbole = 'W' if pot == 'P' else 'Z'
 tab = even if pot == 'P' else odd
 
@@ -39,16 +39,15 @@ colours = cm.nipy_spectral(np.linspace(0, 1, len(tab)))
 # --- PARAMÈTRES FIXES ---
 repertoire_base = './inerP_A1em2_alpha0p7/'
 type_potentiel = 'P' 
-tag_fichier = 'test'
+tag_fichier = 'test'       #hiPhiRes
 nom_fichier_donnees = f"iner{type_potentiel}.{tag_fichier}"
 
 
 
 def recherche_pics(data,freqs,hanning):
     liste_puissance_Cnm = []
-    for i, (colonne, label_Cnm) in enumerate(tab.items()):
-        if colonne < data.shape[1]:
-            # Calcul de la FFT réelle
+    for i, (colonne, label_Cnm) in enumerate(tab.items()):                     #on regarde ici les différent modes Cn,m dont on calcul l'amplitude
+        if colonne < data.shape[1]:                                            
             spectre = np.fft.rfft(data.iloc[:, colonne] * hanning)
             puissance = np.abs(spectre)
             
@@ -56,14 +55,15 @@ def recherche_pics(data,freqs,hanning):
             puissance_max = np.max(puissance)
             freq_max = freqs[idx_max]
             
-            if puissance_max > 1e4:
-                liste_puissance_Cnm.append((freq_max,puissance_max,label_Cnm,spectre,puissance))
+            if puissance_max > 1e4:                                           #et on prends ceux qui sont interressant on ne prends que les pics sup a 1e4
+            # Calcul de la FFT réelle
+                liste_puissance_Cnm.append((freq_max,label_Cnm,spectre,puissance))
     return liste_puissance_Cnm
         
 
 def recherche_simulation_interressante(chemin_fichier):
     
-    data = pd.read_csv(chemin_fichier, sep='\s+', header = None)
+    data = pd.read_csv(chemin_fichier, sep='\s+', header = None)   #calcul de fréquences
     temps =  data.iloc[:,0]
     len_temps = len(temps)
     dt = temps.iloc[1] - temps.iloc[0]
@@ -74,12 +74,13 @@ def recherche_simulation_interressante(chemin_fichier):
     
     for i,element in enumerate(liste_puissance_Cnm):
         
-        if element[2] != mode_dominant[2]:
+        if element[2] != mode_dominant[2]:                                               #on veut savoir quels mode Cn,m réponds bien en amplitude
             if element[1] >= 0.2*mode_dominant[1] and element[0] != mode_dominant[0]:
                 print(chemin_fichier)
-                print("chemin = ",chemin_fichier,freq_max = ",element[0],"puissance_max = ",element[1],"label = ",element[2],"\n")
+                print("chemin = ",chemin_fichier,"freq_max = ",element[0],"puissance_max = ",element[1],"label = ",element[2],"\n")
+                plt.plot(element[3],element[4])
                 return (chemin_fichier,liste_puissance_Cnm)
-        
+            
 
 liste_chemins_dossier = library.registre_chemin_dossier("./inerP_A1em2_alpha0p7")
 liste_simulations_interressante = []
@@ -89,6 +90,7 @@ for racine in tqdm(liste_chemins_dossier, desc="Analyse des simulations", unit="
     chemin_fichier = racine/nom_fichier_donnees
     if chemin_fichier.exists():
         tuple_sortie = recherche_simulation_interressante(chemin_fichier)
+        print(tuple_sortie)
         liste_simulations_interressante.append(tuple_sortie)
 
         

@@ -95,9 +95,6 @@ def analyseSimu(chemin_fichier):
         return f"Erreur sur {chemin_fichier}:{e}"
 
 
-
-
-
 repertoire = "./inerP_A5em2_alpha0p7"
 liste_chemins_dossier = library.registre_chemin_dossier(str(repertoire))    #j'utilise un bibliothèque que j'ai crée pour créer une liste de chemins
 liste_tag_fichier = ['test', 'hiPhiRes', 'test_BIS', 'hiPhiRes_BIS']
