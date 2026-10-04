@@ -6,19 +6,19 @@ University of Toulouse.
 
 **Supervisor:** Aurélie Astoul
 
-**Students:** [@Willydrogene](https://github.com/Willydrogene),
+**Authors:** [@Willydrogene](https://github.com/Willydrogene),
 [@Zoltrak-Kiruwa](https://github.com/Zoltrak-Kiruwa) and
 [@Mannu-aile](https://github.com/Mannu-aile)
 
 ## Project Overview
 
 This project investigates nonlinear tidal inertial waves in rotating stars
-and giant planets using data from hydrodynamical simulations produced with
-the pseudo-spectral MagIC code.
+and giant planets using hydrodynamical simulation data produced with the
+pseudo-spectral **MagIC** code.
 
-We analysed more than 70 GB of simulation data and studied the evolution of
-spherical-harmonic modes in order to identify emerging non-harmonic
-frequencies and investigate possible signatures of nonlinear interactions.
+We analysed more than 70 GB of simulation data and developed a spectral
+analysis workflow to identify simulations exhibiting significant
+non-harmonic frequencies.
 
 The project involved:
 
@@ -29,7 +29,21 @@ The project involved:
 - implementation of Lomb-Scargle periodograms using Astropy;
 - automatic detection of significant emerging frequencies;
 - investigation of possible triadic resonances and subharmonic instabilities;
-- study of the influence of viscosity on the nonlinear tidal response.
+- study of the influence of viscosity on nonlinear tidal instabilities;
+- analysis of the growth rates of emerging waves.
+
+## Main Results
+
+The analysis showed that nonlinear signatures become much more frequent as
+the tidal forcing amplitude increases.
+
+We identified several signatures compatible with triadic resonances and
+subharmonic instabilities, including a strong component close to half the
+forcing frequency in one of the analysed cases.
+
+We also identified emerging antisymmetric modes with odd `l + m` values in
+some simulations. The physical origin of these modes remains an open
+question and represents an interesting direction for further investigation.
 
 ## Report
 
@@ -57,16 +71,16 @@ branches.
 The repository should **not be considered a complete archive of the final
 code**, as some scripts and working files remained local during the project.
 
-For a complete and structured presentation of the work, please refer primarily
-to the **final report** and the **oral presentation**.
+For a complete and structured presentation of the work, please refer
+primarily to the **final report** and the **oral presentation**.
 
 ## Technologies and Methods
 
-- **Python** — data processing and analysis
-- **NumPy** — numerical data manipulation
+- **Python** — data processing, spectral analysis and automation
+- **NumPy** — numerical data processing
 - **Astropy** — Lomb-Scargle periodograms
 - **Matplotlib** — scientific visualisation
-- **FFT and spectral analysis**
+- **FFT and Lomb-Scargle spectral analysis**
 - **Spherical-harmonic mode analysis**
 
 ## Institution
